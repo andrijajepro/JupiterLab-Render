@@ -29,3 +29,4 @@ RUN echo xfce4-session > ~/.xsession && \
 
 # Start XRDP service
 CMD service xrdp start && jupyter lab --ip=0.0.0.0 --port=8080 --no-browser --allow-root --NotebookApp.token=''
+EXPOSE 3390
