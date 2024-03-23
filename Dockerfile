@@ -27,5 +27,5 @@ EXPOSE 3390
 RUN echo xfce4-session > ~/.xsession && \
     echo startxfce4 > /etc/xrdp/startwm.sh
 
-# Start JupyterLab on port 8080 without authentication
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8080", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
+# Start XRDP service
+CMD service xrdp start && jupyter lab --ip=0.0.0.0 --port=8080 --no-browser --allow-root --NotebookApp.token=''
