@@ -1,17 +1,14 @@
 # Use the latest Ubuntu image
 FROM ubuntu:latest
 
-# Set keyboard layout selection as environment variable
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Pre-select keyboard layout
-RUN echo 'keyboard-configuration keyboard-configuration/layout select English (US)' | debconf-set-selections && \
-    echo 'keyboard-configuration keyboard-configuration/layoutcode string us' | debconf-set-selections && \
-    apt-get update && apt-get install -y \
+# Update and install required packages
+RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
-    xrdp \
-    xfce4
+    xvfb \
+    xvnc4viewer \
+    supervisor \
+    net-tools
 
 # Set the working directory
 WORKDIR /app
@@ -19,14 +16,19 @@ WORKDIR /app
 # Install JupyterLab
 RUN pip3 install jupyterlab
 
-# Expose port 8080 (JupyterLab) and port 3390 (XRDP)
-EXPOSE 8080
-EXPOSE 3390
+# Expose ports for JupyterLab and VNC
+EXPOSE 8080 80
 
-# Configure XRDP to use XFCE desktop environment and start on port 3390
-RUN echo xfce4-session > ~/.xsession && \
-    echo startxfce4 > /etc/xrdp/startwm.sh
+# Configure supervisord
+RUN mkdir -p /var/log/supervisor
 
-# Start XRDP service
-CMD service xrdp start && jupyter lab --ip=0.0.0.0 --port=8080 --no-browser --allow-root --NotebookApp.token=''
-EXPOSE 3390
+# Create supervisord.conf
+RUN echo "[supervisord]\n\
+nodaemon=true\n\n\
+[program:xvnc]\n\
+command=/usr/bin/Xvnc :1 -geometry 1024x768 -depth 24 -ac -auth /root/.Xauthority -rfbport 80\n\n\
+[program:jupyterlab]\n\
+command=jupyter lab --ip=0.0.0.0 --port=8080 --no-browser --allow-root --NotebookApp.token=''" > /etc/supervisor/conf.d/supervisord.conf
+
+# Start supervisord which will manage our services
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
